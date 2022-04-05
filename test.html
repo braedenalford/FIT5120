@@ -1,0 +1,52 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet-src.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.3.7/dist/leaflet-search.src.css" />
+    <script src="https://unpkg.com/leaflet-search@2.3.7/dist/leaflet-search.src.js"></script>
+    
+    <script src="export.geojson.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    
+        #map {
+            width:50%;
+            height: 70vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+    var map = L.map('map').setView([-37.840935, 144.946457], 14);
+
+    var poiLayers = L.geoJSON(place, {
+    onEachFeature: function(feature, layer) {
+        layer.bindPopup(feature.properties.amenity + '<br><b>' + feature.properties.name + '</b>');
+    }
+    });
+
+    L.control.search({
+        layer: poiLayers,
+        initial: false,
+        propertyName: 'name' // Specify which property is searched into.
+    })
+    .addTo(map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+
+    </script>
+</body>
+</html>
