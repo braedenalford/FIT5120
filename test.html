@@ -9,18 +9,28 @@
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.3.7/dist/leaflet-search.src.css" />
     <script src="https://unpkg.com/leaflet-search@2.3.7/dist/leaflet-search.src.js"></script>
-    
-    <script src="export.geojson.js"></script>
+
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.11.2/css/all.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
 
     <style>
         body {
             margin: 0;
             padding: 0;
+            text-transform: capitalize;
         }
     
         #map {
             width:50%;
             height: 70vh;
+        }
+
+        span {
+            text-transform: none;
         }
     </style>
 </head>
@@ -29,23 +39,81 @@
     <script>
     var map = L.map('map').setView([-37.840935, 144.946457], 14);
 
-    var poiLayers = L.geoJSON(place, {
-    onEachFeature: function(feature, layer) {
-        layer.bindPopup(feature.properties.amenity + '<br><b>' + feature.properties.name + '</b>');
-    }
+
+    var locationMarker = L.AwesomeMarkers.icon({
+        icon: 'location',
+        iconColor: 'darkred',
+        prefix: 'fa',
+        markerColor: 'red'
     });
 
-    L.control.search({
-        layer: poiLayers,
-        initial: false,
-        propertyName: 'name' // Specify which property is searched into.
-    })
-    .addTo(map);
+    var worshipMarker = L.AwesomeMarkers.icon({
+        icon: 'pray',
+        iconColor: '#0D628D',
+        prefix: 'fa',
+        markerColor: 'blue'
+    });
+
+    var communityMarker = L.AwesomeMarkers.icon({
+        icon: 'school',
+        iconColor: '#136D06',
+        prefix: 'fa',
+        markerColor: 'green'
+    });
+
+	map.addControl( new L.Control.Search({
+		url: 'https://nominatim.openstreetmap.org/search?format=json&q={s}',
+		jsonpParam: 'json_callback',
+		propertyName: 'display_name',
+		propertyLoc: ['lat','lon'],
+		marker: L.marker([0,0], {icon: locationMarker}),
+		autoCollapse: true,
+		autoType: false,
+		minLength: 2,
+        geocodingQueryParams: {countrycodes: 'au'}
+	}) );
+
+
+
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    minZoom: 13
     }).addTo(map);
 
+    var info;
+
+    fetch('https://d8ecgfo964.execute-api.ap-southeast-2.amazonaws.com/default/mysql_query')
+    .then(res => res.json())
+    .then(json => {
+        console.log(json);
+        
+        info = json
+        var worship,community;
+
+        for (var i = 0; i < info.length; i++) {
+            if(info[i]['amenity'] == 'place_of_worship'){
+                var worship = L.marker([info[i]['lat'], info[i]['lon']], {icon: worshipMarker})
+                .bindPopup('<b style="font-size:14px">' + info[i]['name'] + '</b><br/><br/> <b>Religion:</b> ' + info[i]['type'] + '<br/><b>Denomination:</b> ' + info[i]['subtype'].replaceAll('_',' ')).addTo(map);
+            }
+            else if (info[i]['amenity'] == 'community_centre'){
+                var community = L.marker([info[i]['lat'], info[i]['lon']], {icon: communityMarker})
+                .bindPopup('<b style="font-size:14px">' + info[i]['name'] + '</b>').addTo(map);
+            }
+        };
+        var commLayer = L.layerGroup([community]);
+        var worshipLayer = L.layergroup([worship]);
+
+        var overlayMaps = {
+            Community: commLayer,
+            Worship: worshipLayer
+        };
+
+        L.control.layers(overlayMaps).addTo(map);
+    });
+
+    
+    
 
     </script>
 </body>
